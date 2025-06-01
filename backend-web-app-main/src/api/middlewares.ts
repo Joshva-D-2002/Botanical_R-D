@@ -1,17 +1,36 @@
+// src/api/middlewares.ts
+
 import {
     defineMiddlewares,
-    validateAndTransformBody,
+    MedusaNextFunction,
+    MedusaRequest,
+    MedusaResponse,
 } from "@medusajs/framework/http"
-import { PostAdminCreateBrand } from "./admin/brands/validator"
-
 export default defineMiddlewares({
     routes: [
         {
-            matcher: "/admin/brands",
-            method: "POST",
+            matcher: "/*",
             middlewares: [
-                validateAndTransformBody(PostAdminCreateBrand),
+                (
+                    req: MedusaRequest,
+                    res: MedusaResponse,
+                    next: MedusaNextFunction
+                ) => {
+
+                    // if (!req?.auth_context?.actor_id) {
+                    //     return res.redirect('http://localhost:3000/')
+
+                    // }
+                    // // console.log("Received a request!", req?.auth_context?.actor_id, req.originalUrl)
+                    // // console.log("Received a request", req);
+                    // else {
+                    //     next()
+
+                    // }
+                    return res.redirect('http://localhost:3000/')
+                    next()
+                },
             ],
         },
     ],
-});
+})
