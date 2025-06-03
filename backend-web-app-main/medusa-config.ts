@@ -10,7 +10,7 @@ module.exports = defineConfig({
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
       authCors: "http://localhost:3000,http://127.0.0.1:3000",
       storeCors: "http://localhost:3000,http://127.0.0.1:3000",
-      adminCors: "http://localhost:3000,http://127.0.0.1:3000",
+      adminCors: "http://localhost:3000,http://127.0.0.1:3000,http://localhost:9000",
     }
   },
   modules: [
@@ -18,5 +18,8 @@ module.exports = defineConfig({
       resolve: "./src/modules/brand",
     },
   ],
+  admin: {
+    disable: false,
+  },
 
 })
