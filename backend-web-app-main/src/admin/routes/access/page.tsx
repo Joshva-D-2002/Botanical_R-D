@@ -8,66 +8,115 @@ const CustomPage = () => {
     const [isVerified, setIsVerified] = useState(false)
     const [error, setError] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+    const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
 
     useEffect(() => {
+        const fetchQrCode = async () => {
+            try {
+                const response = await fetch("/admin/generate-qr")
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch QR code: ${response.status}`)
+                }
+                const data = await response.json()
+                setQrCodeUrl(data.qrCodeImageUrl)
+            } catch (err) {
+                console.error("Error fetching QR code:", err)
+                setError("Failed to load QR code. Please refresh the page.")
+            }
+        }
+
+        fetchQrCode()
+
         const timer = setTimeout(() => {
-            const style = document.createElement('style');
+            const style = document.createElement("style")
             style.innerHTML = `
-  [role="dialog"] {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-    #medusa > div > div > div:nth-child(2) > div {
-    display: none !important;
-  }
-    #medusa > div > div > div.flex.h-screen.w-full.flex-col.overflow-auto > div{
-        display: none !important;
-    }
-`;
-            document.head.appendChild(style);
+                [role="dialog"] {
+                    display: none !important;
+                    visibility: hidden !important;
+                    opacity: 0 !important;
+                    pointer-events: none !important;
+                }
+                #medusa > div > div > div:nth-child(2) > div {
+                    display: none !important;
+                }
+                #medusa > div > div > div.flex.h-screen.w-full.flex-col.overflow-auto > div {
+                    display: none !important;
+                }
+            `
+            document.head.appendChild(style)
+        }, 1)
 
-            document.head.appendChild(style);
-        }, 1);
+        return () => clearTimeout(timer)
+    }, [])
 
-        return () => clearTimeout(timer);
-    }, []);
-
-
-    const handleSubmit = async (e: React.FormEvent) => {
+    const verifyMfaAndUnlockAccess = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
         setError("")
 
-        // Check if passcode is correct
-        if (passcode === "1234") {
-            try {
-                // Make API call to unlock user access
-                const response = await fetch('/admin/unlock-access', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ passcode })
-                })
+        try {
+            const mfaResponse = await fetch("/admin/verify-code", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ passcode }),
+            })
 
-                if (response.ok) {
-                    setIsVerified(true)
-                    setTimeout(() => {
-                        window.location.href = '/app/orders'
-                    }, 1500)
-                } else {
-                    setError("Failed to unlock access. Please try again.")
+            const mfaData = await mfaResponse.json()
+            console.log("MFA Response:", mfaData)
+
+            if (!mfaResponse.ok) {
+                switch (mfaData.error) {
+                    case "NO_SESSION":
+                    case "NO_MFA_SECRET":
+                        setError("❌ Session expired. Please refresh the page and try again.")
+                        break
+                    case "MISSING_PASSCODE":
+                        setError("❌ Please enter a passcode.")
+                        break
+                    case "INVALID_PASSCODE_FORMAT":
+                        setError("❌ Passcode must be exactly 6 digits.")
+                        break
+                    case "INVALID_MFA_CODE":
+                        setError("❌ Invalid or expired code. Please try again.")
+                        break
+                    case "MISSING_BODY":
+                        setError("❌ Request error. Please try again.")
+                        break
+                    default:
+                        setError(`❌ ${mfaData.message || "MFA verification failed."}`)
                 }
-            } catch (err) {
-                setError("Network error. Please try again.")
+                setIsLoading(false)
+                return
             }
-        } else {
-            setError("Invalid passcode. Please try again.")
+
+            const unlockResponse = await fetch("/admin/unlock-access", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+            })
+
+            if (unlockResponse.ok) {
+                setIsVerified(true)
+                setTimeout(() => {
+                    window.location.href = "/app/orders"
+                }, 1500)
+            } else {
+                const unlockData = await unlockResponse.json()
+                setError(`❌ ${unlockData.message || "Failed to unlock access."}`)
+            }
+        } catch (err) {
+            console.error("Network error:", err)
+            setError("⚠️ Network error. Please check your connection and try again.")
         }
 
         setIsLoading(false)
+    }
+
+    const handlePasscodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.replace(/\D/g, '')
+        setPasscode(value)
+        if (error) setError("") 
     }
 
     if (isVerified) {
@@ -95,32 +144,49 @@ const CustomPage = () => {
             <div className="px-6 py-8">
                 <div className="max-w-md mx-auto">
                     <div className="space-y-6">
+                        {qrCodeUrl && (
+                            <div className="text-center">
+                                <Text className="mb-2 font-medium">Scan this QR code to set up MFA</Text>
+                                <img
+                                    src={qrCodeUrl}
+                                    alt="MFA QR Code"
+                                    className="mx-auto max-w-[200px] border p-2 rounded-lg shadow"
+                                />
+                                <Text className="text-xs text-gray-500 mt-2">
+                                    Use Google Authenticator, Authy, or any TOTP app
+                                </Text>
+                            </div>
+                        )}
+
                         <div className="text-center space-y-2">
                             <Text className="text-gray-600">
-                                Please enter the access code to unlock full admin privileges
+                                Enter your 6-digit access code to unlock admin privileges
                             </Text>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={verifyMfaAndUnlockAccess} className="space-y-4">
                             <div>
                                 <label htmlFor="passcode" className="block text-sm font-medium text-gray-700 mb-2">
                                     Access Code
                                 </label>
                                 <Input
                                     id="passcode"
-                                    type="password"
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                     value={passcode}
-                                    onChange={(e) => setPasscode(e.target.value)}
-                                    placeholder="Enter 4-digit code"
-                                    maxLength={4}
+                                    onChange={handlePasscodeChange}
+                                    placeholder="Enter 6-digit code"
+                                    maxLength={6}
                                     className="w-full text-center text-lg tracking-widest"
+                                    autoComplete="off"
                                     autoFocus
                                     required
                                 />
                             </div>
 
                             {error && (
-                                <div className="text-red-600 text-sm text-center">
+                                <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-md border border-red-200">
                                     {error}
                                 </div>
                             )}
@@ -128,17 +194,11 @@ const CustomPage = () => {
                             <Button
                                 type="submit"
                                 className="w-full"
-                                disabled={isLoading || passcode.length !== 4}
+                                disabled={isLoading || passcode.length !== 6}
                             >
-                                {isLoading ? "Verifying..." : "Unlock Access"}
+                                {isLoading ? "Verifying..." : "Verify & Unlock Access"}
                             </Button>
                         </form>
-
-                        <div className="text-center">
-                            <Text className="text-xs text-gray-500">
-                                Contact your administrator if you don't have the access code
-                            </Text>
-                        </div>
                     </div>
                 </div>
             </div>

@@ -1,72 +1,63 @@
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { defineWidgetConfig } from "@medusajs/admin-sdk"
 
 const REDIRECT_URL = "/app/access"
-const STORAGE_KEY = "order_widget_redirected"
-const SESSION_TIMEOUT = 22 * 1000
 
 const OrderWidget = () => {
-  const [hasRedirectedBefore, setHasRedirectedBefore] = useState(false)
-
-  const isSessionValid = (): boolean => {
-    const stored = sessionStorage.getItem(STORAGE_KEY)
-
-    if (!stored) return false
-
+  const checkUnlockStatus = async () => {
     try {
-      const session = JSON.parse(stored)
-      const now = Date.now()
+      const res = await fetch("/admin/unlock-access", {
+        method: "GET",
+        credentials: "include",
+      })
+      const data = await res.json()
+      console.log("🔐 Unlock check:", data)
 
-      if (now - session.timestamp > SESSION_TIMEOUT) {
-        sessionStorage.removeItem(STORAGE_KEY)
-        return false
-      }
-
-      return session.redirected === true
-    } catch {
-      sessionStorage.removeItem(STORAGE_KEY)
-      return false
-    }
-  }
-
-  const handleRedirect = () => {
-    sessionStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ redirected: true, timestamp: Date.now() })
-    )
-
-    try {
-      if (window.history && window.history.pushState) {
-        window.history.pushState(null, '', REDIRECT_URL)
-        window.location.reload()
-      } else {
+      if (data?.userId == null) {
         window.location.href = REDIRECT_URL
       }
     } catch (error) {
-      console.error("Redirect failed:", error)
-      window.open(REDIRECT_URL, "_self")
+      console.error("❌ Failed to check unlock status:", error)
+      window.location.href = REDIRECT_URL
     }
   }
 
   useEffect(() => {
-    const valid = isSessionValid()
-
-    if (!valid) {
-      setTimeout(() => handleRedirect(), 1)
-    } else {
-      setHasRedirectedBefore(true)
-
-      const style = document.createElement("style")
-      style.innerHTML = `a[href="/app/access"] { display: none !important; }`
-      document.head.appendChild(style)
-    }
+    const style = document.createElement("style")
+    style.innerHTML = `a[href="/app/access"] { display: none !important; }`
+    document.head.appendChild(style)
+    checkUnlockStatus()
   }, [])
 
   return null
 }
 
 export const config = defineWidgetConfig({
-  zone: "order.list.before",
+  zone: [
+    "order.list.before",
+    "product.list.before",
+    "campaign.list.before",
+    "customer.list.before",
+    "customer_group.list.before",
+    "inventory_item.list.before",
+    "price_list.list.before",
+    "product_variant.details.before",
+    "product_collection.list.before",
+    "product_category.list.before",
+    "promotion.list.before",
+    "api_key.list.before",
+    "location.list.before",
+    "profile.details.before",
+    "region.list.before",
+    "reservation.list.before",
+    "return_reason.list.before",
+    "sales_channel.list.before",
+    "shipping_profile.list.before",
+    "store.details.before",
+    "tax.list.before",
+    "user.list.before",
+    "workflow.list.before"
+  ],
 })
 
 export default OrderWidget

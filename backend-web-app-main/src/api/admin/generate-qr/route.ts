@@ -5,12 +5,12 @@ import QRCode from "qrcode"
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     try {
         const secret = speakeasy.generateSecret({
-            name: `Botanical`,
+            name: `Botanical-Backend`,
         })
 
         const qrCodeImageUrl = await QRCode.toDataURL(secret.otpauth_url)
 
-        req.session.mfa_secret = secret.base32
+        req.session.mfa_admin_secret = secret.base32
         await req.session.save()
 
         return res.status(200).json({
