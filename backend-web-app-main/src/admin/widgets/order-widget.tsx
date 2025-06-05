@@ -11,20 +11,27 @@ const OrderWidget = () => {
         credentials: "include",
       })
       const data = await res.json()
-      console.log("🔐 Unlock check:", data)
+      console.log("Unlock check:", data)
 
       if (data?.userId == null) {
         window.location.href = REDIRECT_URL
       }
     } catch (error) {
-      console.error("❌ Failed to check unlock status:", error)
+      console.error("Failed to check unlock status:", error)
       window.location.href = REDIRECT_URL
     }
   }
 
   useEffect(() => {
     const style = document.createElement("style")
-    style.innerHTML = `a[href="/app/access"] { display: none !important; }`
+    style.innerHTML = `a[href="/app/access"] {
+                          display: none !important; 
+                      }
+                        a[href="/app/products/create"] {
+                          pointer-events: none;  
+                          opacity: 0.5;        
+                          cursor: not-allowed;
+                      }`
     document.head.appendChild(style)
     checkUnlockStatus()
   }, [])

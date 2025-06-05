@@ -70,22 +70,22 @@ const CustomPage = () => {
                 switch (mfaData.error) {
                     case "NO_SESSION":
                     case "NO_MFA_SECRET":
-                        setError("❌ Session expired. Please refresh the page and try again.")
+                        setError("Session expired. Please refresh the page and try again.")
                         break
                     case "MISSING_PASSCODE":
-                        setError("❌ Please enter a passcode.")
+                        setError("Please enter a passcode.")
                         break
                     case "INVALID_PASSCODE_FORMAT":
-                        setError("❌ Passcode must be exactly 6 digits.")
+                        setError("Passcode must be exactly 6 digits.")
                         break
                     case "INVALID_MFA_CODE":
-                        setError("❌ Invalid or expired code. Please try again.")
+                        setError("Invalid or expired code. Please try again.")
                         break
                     case "MISSING_BODY":
-                        setError("❌ Request error. Please try again.")
+                        setError("Request error. Please try again.")
                         break
                     default:
-                        setError(`❌ ${mfaData.message || "MFA verification failed."}`)
+                        setError(`${mfaData.message || "MFA verification failed."}`)
                 }
                 setIsLoading(false)
                 return
@@ -103,11 +103,11 @@ const CustomPage = () => {
                 }, 1500)
             } else {
                 const unlockData = await unlockResponse.json()
-                setError(`❌ ${unlockData.message || "Failed to unlock access."}`)
+                setError(`${unlockData.message || "Failed to unlock access."}`)
             }
         } catch (err) {
             console.error("Network error:", err)
-            setError("⚠️ Network error. Please check your connection and try again.")
+            setError("Network error. Please check your connection and try again.")
         }
 
         setIsLoading(false)
