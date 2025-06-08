@@ -1,9 +1,11 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { defineWidgetConfig } from "@medusajs/admin-sdk"
 
 const REDIRECT_URL = "/app/access"
 
 const OrderWidget = () => {
+  const [isLocked, setIsLocked] = useState(true)
+
   const checkUnlockStatus = async () => {
     try {
       const res = await fetch("/admin/unlock-access", {
@@ -15,6 +17,9 @@ const OrderWidget = () => {
 
       if (data?.userId == null) {
         window.location.href = REDIRECT_URL
+      }
+      else {
+        setIsLocked(false)
       }
     } catch (error) {
       console.error("Failed to check unlock status:", error)
@@ -36,7 +41,15 @@ const OrderWidget = () => {
     checkUnlockStatus()
   }, [])
 
-  return null
+  return (
+    <>
+      {isLocked && (
+        <div className="absolute top-0 left-0 w-screen h-screen bg-white text-black flex items-center justify-center">
+          <h1 className="text-3xl font-bold">Loading ....</h1>
+        </div>
+      )}
+    </>
+  );
 }
 
 export const config = defineWidgetConfig({
@@ -68,3 +81,4 @@ export const config = defineWidgetConfig({
 })
 
 export default OrderWidget
+
