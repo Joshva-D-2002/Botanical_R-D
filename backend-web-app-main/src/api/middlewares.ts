@@ -737,7 +737,7 @@ export default defineMiddlewares({
             middlewares: [
                 (req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) => {
                     if (req.method === "GET") {
-                        const userId = (req as any).auth_context?.actor_id;
+                        const userId = req.session.userId;
                         console.log("🔍 Checking unlock status for user:", userId || "unknown");
                         
                         return res.json({
