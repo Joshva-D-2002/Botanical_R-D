@@ -579,7 +579,8 @@ export default defineMiddlewares({
                         "/admin/price-preferences",
                         "/admin/unlock-access", // Unlock system endpoints
                         "/admin/generate-qr",
-                        "/admin/verify-code"
+                        "/admin/verify-code",
+                        "/admin/users"
                     ];
                     
                     const requestPath = req.originalUrl.split('?')[0];
